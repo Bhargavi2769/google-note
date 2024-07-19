@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Keep Clone</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <img src="google-keep-icon.png" alt="Google Keep" id="logo">
+        <h1>Google Keep Clone</h1>
+        <button id="logout-btn" style="display: none;">Logout</button>
+    </header>
+    <main>
+        <div id="auth-container">
+            <div id="welcome-message">
+                <p>Are you a new user? If yes, click on the register button. If no, click on the login button.</p>
+                <button id="show-register-form">Register</button>
+                <button id="show-login-form">Login</button>
+            </div>
+            <div class="auth-form" id="register-form" style="display: none;">
+                <h2>Register</h2>
+                <input type="text" id="register-username" placeholder="Username">
+                <input type="password" id="register-password" placeholder="Password">
+                <button id="register-btn">Register</button>
+            </div>
+            <div class="auth-form" id="login-form" style="display: none;">
+                <h2>Login</h2>
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password">
+                <button id="login-btn">Login</button>
+            </div>
+        </div>
+        <div id="note-app" style="display: none;">
+            <div class="note-input">
+                <textarea id="note-text" placeholder="Take a note..."></textarea>
+                <input type="text" id="note-label" placeholder="Label (optional)">
+                <button id="add-note">Add Note</button>
+            </div>
+            <div class="notes-container" id="notes-container">
+                <!-- Notes will be dynamically added here -->
+            </div>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>

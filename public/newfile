@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Keep Clone</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Google Keep Clone</h1>
+    </header>
+    <main>
+        <div id="auth-container">
+            <div class="auth-form" id="register-form">
+                <h2>Register</h2>
+                <input type="text" id="register-username" placeholder="Username">
+                <input type="password" id="register-password" placeholder="Password">
+                <button id="register-btn">Register</button>
+            </div>
+            <div class="auth-form" id="login-form">
+                <h2>Login</h2>
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password">
+                <button id="login-btn">Login</button>
+            </div>
+        </div>
+        <div id="note-app" style="display: none;">
+            <div class="note-input">
+                <textarea id="note-text" placeholder="Take a note..."></textarea>
+                <input type="text" id="note-label" placeholder="Label (optional)">
+                <button id="add-note">Add Note</button>
+            </div>
+            <div class="notes-container" id="notes-container">
+                <!-- Notes will be dynamically added here -->
+            </div>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f9f9f9;
+}
+
+header {
+    width: 100%;
+    background-color: #ffeb3b;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+main {
+    width: 100%;
+    max-width: 800px;
+    margin-top: 2rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.auth-form input {
+    width: 100%;
+    max-width: 800px;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.auth-form button {
+    padding: 0.5rem 1rem;
+    background-color: #ffeb3b;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.auth-form button:hover {
+    background-color: #fdd835;
+}
+
+.note-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+#note-text, #note-label {
+    width: 100%;
+    max-width: 800px;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    resize: none;
+    margin-bottom: 1rem;
+}
+
+#add-note {
+    padding: 0.5rem 1rem;
+    background-color: #ffeb3b;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+#add-note:hover {
+    background-color: #fdd835;
+}
+
+.notes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.note {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: calc(33.333% - 2rem);
+    box-sizing: border-box;
+    position: relative;
+}
+
+.note-label {
+    font-size: 0.8rem;
+    color: gray;
+    margin-top: 0.5rem;
+}
+
+.note-buttons {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.note-buttons button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+}
+
+.note-buttons button:hover {
+    color: black;
+}
+
+
+
+
+
+document.getElementById('register-btn').addEventListener('click', async () => {
+    const username = document.getElementById('register-username').value;
+    const password = document.getElementById('register-password').value;
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        if (response.ok) {
+            alert('User registered successfully');
+        } else {
+            alert('Registration failed');
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Registration failed');
+    }
+});
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('token', data.token);
+            document.getElementById('auth-container').style.display = 'none';
+            document.getElementById('note-app').style.display = 'block';
+            fetchNotesFromServer();
+        } else {
+            alert('Login failed');
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Login failed');
+    }
+});
+
+document.getElementById('add-note').addEventListener('click', () => {
+    const noteText = document.getElementById('note-text').value;
+    const noteLabel = document.getElementById('note-label').value;
+    if (noteText.trim() === '') return;
+
+    addNoteToUI(noteText, noteLabel);
+    saveNoteToServer(noteText, noteLabel);
+    document.getElementById('note-text').value = '';
+    document.getElementById('note-label').value = '';
+});
+
+function addNoteToUI(noteText, noteLabel, noteId) {
+    const noteElement = document.createElement('div');
+    noteElement.classList.add('note');
+    noteElement.setAttribute('data-id', noteId);
+    noteElement.innerHTML = `
+        <div>${noteText}</div>
+        ${noteLabel ? `<div class="note-label">${noteLabel}</div>` : ''}
+        <div class="note-buttons">
+            <button class="edit-note">✏️</button>
+            <button class="delete-note">🗑️</button>
+        </div>
+    `;
+
+    noteElement.querySelector('.edit-note').addEventListener('click', () => editNoteInUI(noteElement));
+    noteElement.querySelector('.delete-note').addEventListener('click', () => deleteNoteFromServer(noteElement));
+
+    document.getElementById('notes-container').appendChild(noteElement);
+}
+
+function editNoteInUI(noteElement) {
+    const noteId = noteElement.getAttribute('data-id');
+    const newText = prompt('Edit your note:', noteElement.firstChild.textContent);
+    const newLabel = prompt('Edit your label:', noteElement.querySelector('.note-label')?.textContent || '');
+    if (newText === null) return;
+
+    noteElement.firstChild.textContent = newText;
+    if (newLabel !== null) {
+        const labelElement = noteElement.querySelector('.note-label');
+        if (labelElement) {
+            labelElement.textContent = newLabel;
+        } else {
+            const newLabelElement = document.createElement('div');
+            newLabelElement.classList.add('note-label');
+            newLabelElement.textContent = newLabel;
+            noteElement.appendChild(newLabelElement);
+        }
+    }
+
+    updateNoteOnServer(noteId, newText, newLabel);
+}
+
+async function saveNoteToServer(noteText, noteLabel) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            },
+            body: JSON.stringify({ text: noteText, label: noteLabel })
+        });
+        const savedNote = await response.json();
+        addNoteToUI(savedNote.text, savedNote.label, savedNote._id);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function updateNoteOnServer(noteId, newText, newLabel) {
+    try {
+        const token = localStorage.getItem('token');
+        await fetch(`/api/notes/${noteId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            },
+            body: JSON.stringify({ text: newText, label: newLabel })
+        });
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deleteNoteFromServer(noteElement) {
+    const noteId = noteElement.getAttribute('data-id');
+    try {
+        const token = localStorage.getItem('token');
+        await fetch(`/api/notes/${noteId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token
+            }
+        });
+        noteElement.remove();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function fetchNotesFromServer() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/notes', {
+            headers: {
+                'Authorization': token
+            }
+        });
+        const notes = await response.json();
+        notes.forEach(note => addNoteToUI(note.text, note.label, note._id));
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Check if user is already logged in
+if (localStorage.getItem('token')) {
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('note-app').style.display = 'block';
+    fetchNotesFromServer();
+}
+
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
+const app = express();
+app.use(express.json());
+app.use(express.static('public'));
+app.use(cors());
+
+mongoose.connect('mongodb://localhost:27017/googleKeepClone');
+
+const userSchema = new mongoose.Schema({
+    username: String,
+    password: String
+});
+
+const noteSchema = new mongoose.Schema({
+    text: String,
+    label: String,
+    userId: mongoose.Schema.Types.ObjectId
+});
+
+const User = mongoose.model('User', userSchema);
+const Note = mongoose.model('Note', noteSchema);
+
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, password: hashedPassword });
+    await user.save();
+    res.status(201).send('User registered');
+});
+
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(401).send('Invalid credentials');
+    }
+    const token = jwt.sign({ userId: user._id }, 'secret');
+    res.send({ token });
+});
+
+app.use(async (req, res, next) => {
+    const token = req.headers['authorization'];
+    if (!token) return res.status(401).send('Unauthorized');
+    try {
+        const { userId } = jwt.verify(token, 'secret');
+        req.userId = userId;
+        next();
+    } catch {
+        res.status(401).send('Unauthorized');
+    }
+});
+
+app.post('/api/notes', async (req, res) => {
+    const { text, label } = req.body;
+    const note = new Note({
+        text,
+        label,
+        userId: req.userId
+    });
+    await note.save();
+    res.status(201).send(note);
+});
+
+app.get('/api/notes', async (req, res) => {
+    const notes = await Note.find({ userId: req.userId });
+    res.send(notes);
+});
+
+app.put('/api/notes/:id', async (req, res) => {
+    const { id } = req.params;
+    const { text, label } = req.body;
+    await Note.findByIdAndUpdate(id, { text, label });
+    res.send('Note updated');
+});
+
+app.delete('/api/notes/:id', async (req, res) => {
+    const { id } = req.params;
+    await Note.findByIdAndDelete(id);
+    res.send('Note deleted');
+});
+
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
+});
+
+
+
+
+
+
+
+
